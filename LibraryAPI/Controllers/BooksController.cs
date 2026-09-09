@@ -1,6 +1,5 @@
 using LibraryAPI.Models;
 using LibraryAPI.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -18,7 +17,6 @@ namespace LibraryAPI.Controllers
             _bookService = bookService;
         }
 
-        // Publicly accessible for browsing catalog
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
         {
@@ -26,7 +24,6 @@ namespace LibraryAPI.Controllers
             return Ok(books);
         }
 
-        // Publicly accessible for viewing details
         [HttpGet("{id}")]
         public async Task<ActionResult<Book>> GetBook(int id)
         {
@@ -38,19 +35,15 @@ namespace LibraryAPI.Controllers
             return Ok(book);
         }
 
-        // Requires any authenticated user (Admin or User)
-        [Authorize]
         [HttpPost]
-        public async Task<ActionResult<Book>> CreateBook([FromBody] Book book)
+        public async Task<ActionResult<Book>> CreateBook(Book book)
         {
             var createdBook = await _bookService.AddBookAsync(book);
             return CreatedAtAction(nameof(GetBook), new { id = createdBook.Id }, createdBook);
         }
 
-        // Requires any authenticated user (Admin or User)
-        [Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBook(int id, [FromBody] Book book)
+        public async Task<IActionResult> UpdateBook(int id, Book book)
         {
             if (id != book.Id)
             {
@@ -66,8 +59,6 @@ namespace LibraryAPI.Controllers
             return NoContent();
         }
 
-        // Strictly restricted to users with the 'Admin' role
-        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook(int id)
         {

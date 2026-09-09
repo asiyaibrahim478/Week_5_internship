@@ -1,22 +1,13 @@
 import { Component } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { AuthService } from './services/auth.service';
+import { RouterOutlet, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'Library Management System';
-
-  constructor(public authService: AuthService, private router: Router) {}
-
-  onLogout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
+  title = 'library-frontend';
 }

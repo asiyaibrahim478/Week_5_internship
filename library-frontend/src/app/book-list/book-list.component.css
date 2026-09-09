@@ -136,15 +136,6 @@ tr:hover {
   background-color: #fecaca;
 }
 
-.badge-readonly {
-  display: inline-block;
-  font-size: 0.775rem;
-  color: #64748b;
-  background-color: #f1f5f9;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
 .empty-box {
   padding: 2rem;
   text-align: center;

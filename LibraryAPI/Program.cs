@@ -1,24 +1,62 @@
+using System.Text;
 using LibraryAPI.Data;
 using LibraryAPI.Repositories;
 using LibraryAPI.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add services to the container.
+// 1. Add Controllers & API Explorer
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-// 2. Configure Entity Framework Core with SQL Server
+// 2. Configure Swagger with JWT Bearer Support
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "LibraryAPI - Week 4 Secured",
+        Version = "v1",
+        Description = "ASP.NET Core Web API with JWT Authentication & Role-Based Authorization (Admin / User)."
+    });
+
+    // Define JWT Bearer security scheme
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// 3. Configure Database (SQL Server with resilient InMemory fallback)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<LibraryDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
 });
 
-// 3. Register Dependency Injection Services
-// Check database connectivity at startup; use InMemory fallback if SQL Server is not locally active
 bool canConnectDb = false;
 try
 {
@@ -43,35 +81,71 @@ if (canConnectDb)
 }
 else
 {
-    Console.WriteLine("[Database]: SQL Server not detected or unreachable. Seamlessly using InMemoryBookRepository for live development.");
+    Console.WriteLine("[Database]: SQL Server not detected or unreachable. Using InMemoryBookRepository for live development.");
     builder.Services.AddSingleton<IBookRepository, InMemoryBookRepository>();
 }
 
 builder.Services.AddScoped<IBookService, BookService>();
 
-// 4. Configure CORS for Angular Frontend
+// 4. Configure JWT Authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretLibraryKeyForWeek4InternshipJWTTokenValidation2026!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "LibraryAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "LibraryAppUsers";
+var key = Encoding.UTF8.GetBytes(jwtKey);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false, // Set to true if validating specific issuer
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = false, // Set to true if validating specific audience
+        ValidAudience = jwtAudience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// 5. Configure CORS for Angular Frontend (port 4200)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins("http://localhost:4200")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 6. Configure HTTP Middleware Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "LibraryAPI v1");
+    });
 }
 
 app.UseCors("AllowAngular");
 app.UseHttpsRedirection();
 
+// IMPORTANT: Authentication must come before Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

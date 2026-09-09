@@ -1,9 +1,22 @@
 <div class="book-list-container">
   <div class="header-section">
-    <h2>📚 Library Catalog</h2>
-    <button class="btn-refresh" (click)="loadBooks()" [disabled]="isLoading">
-      🔄 Refresh
-    </button>
+    <div>
+      <h2>📚 Library Catalog</h2>
+      <p class="subtitle">Publicly browsable collection • Modifications protected by JWT</p>
+    </div>
+    <div class="header-actions">
+      <a *ngIf="authService.isLoggedInSignal()" routerLink="/add-book" class="btn-primary">
+        ➕ Add New Book
+      </a>
+      <button class="btn-refresh" (click)="loadBooks()" [disabled]="isLoading">
+        🔄 Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  <div *ngIf="notificationMessage" class="state-box success-box">
+    <p>✅ {{ notificationMessage }}</p>
   </div>
 
   <!-- Loading State -->
@@ -27,7 +40,7 @@
           <th>Title</th>
           <th>Author</th>
           <th>Category</th>
-          <th>Actions</th>
+          <th *ngIf="authService.isAdmin()">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -36,7 +49,7 @@
           <td class="book-title">{{ book.title }}</td>
           <td>{{ book.author }}</td>
           <td><span class="badge">{{ book.category }}</span></td>
-          <td>
+          <td *ngIf="authService.isAdmin()">
             <button class="btn-delete" (click)="deleteBook(book.id)">🗑️ Delete</button>
           </td>
         </tr>
@@ -45,7 +58,10 @@
 
     <ng-template #emptyState>
       <div class="empty-box">
-        <p>No books available in the library yet. Add one using the form above!</p>
+        <p>No books available in the library yet.</p>
+        <a *ngIf="authService.isLoggedInSignal()" routerLink="/add-book" class="btn-primary">
+          Add the first book
+        </a>
       </div>
     </ng-template>
   </div>

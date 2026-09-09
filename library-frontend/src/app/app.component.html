@@ -1,9 +1,37 @@
-<h1>Library Frontend</h1>
-<nav>
-  <a routerLink="/">Book List</a> | 
-  <a routerLink="/add-book">Add Book</a>
-</nav>
+<div class="app-wrapper">
+  <header class="app-header">
+    <div class="brand">
+      <span class="logo-icon">📚</span>
+      <div>
+        <h1 class="brand-title">Library Management Hub</h1>
+        <span class="badge">Week 4 Secured</span>
+      </div>
+    </div>
 
-<hr>
+    <nav class="nav-links">
+      <a routerLink="/books" class="nav-item">Browse Books</a>
+      <a *ngIf="authService.isLoggedInSignal()" routerLink="/add-book" class="nav-item">Add Book</a>
+    </nav>
 
-<router-outlet></router-outlet>
+    <div class="auth-status">
+      <ng-container *ngIf="authService.isLoggedInSignal(); else loggedOutTemplate">
+        <div class="user-pill">
+          <span class="user-avatar">👤</span>
+          <span class="username">{{ authService.currentUser()?.username }}</span>
+          <span class="role-badge" [class.admin-badge]="authService.isAdmin()">
+            {{ authService.currentUser()?.role }}
+          </span>
+        </div>
+        <button class="btn-logout" (click)="onLogout()">Log Out</button>
+      </ng-container>
+
+      <ng-template #loggedOutTemplate>
+        <a routerLink="/login" class="btn-login">Log In / Register</a>
+      </ng-template>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

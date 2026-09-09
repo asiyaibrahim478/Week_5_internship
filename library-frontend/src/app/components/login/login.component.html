@@ -1,0 +1,70 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-icon">🔐</div>
+      <h2>{{ isRegisterMode ? 'Create an Account' : 'Welcome Back' }}</h2>
+      <p class="auth-subtitle">
+        {{ isRegisterMode ? 'Register to access library features' : 'Enter your credentials to manage books' }}
+      </p>
+    </div>
+
+    <!-- Feedback Alerts -->
+    <div *ngIf="errorMessage" class="alert alert-error">
+      <span>⚠️ {{ errorMessage }}</span>
+    </div>
+    <div *ngIf="successMessage" class="alert alert-success">
+      <span>✅ {{ successMessage }}</span>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          id="username"
+          type="text"
+          name="username"
+          [(ngModel)]="username"
+          placeholder="e.g. Asiya or admin"
+          required
+          autocomplete="username"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+
+      <!-- Role selector when registering -->
+      <div *ngIf="isRegisterMode" class="form-group">
+        <label for="role">Select Role</label>
+        <select id="role" name="role" [(ngModel)]="role">
+          <option value="User">Standard User (View / Create / Edit)</option>
+          <option value="Admin">Administrator (Full Access + Delete)</option>
+        </select>
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="isLoading">
+        <span *ngIf="!isLoading">{{ isRegisterMode ? 'Register Account' : 'Log In' }}</span>
+        <span *ngIf="isLoading" class="spinner-text">Processing...</span>
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>
+        {{ isRegisterMode ? 'Already have an account?' : "Don't have an account yet?" }}
+        <button type="button" class="link-btn" (click)="toggleMode()">
+          {{ isRegisterMode ? 'Log In here' : 'Register here' }}
+        </button>
+      </p>
+    </div>
+  </div>
+</div>

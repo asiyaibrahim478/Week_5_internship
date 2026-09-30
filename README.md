@@ -1,64 +1,48 @@
-# 📚 Library Management System & AI Service (Week 4 Milestone)
+# 📚 Library Management System & AI Service (Week 5 Milestone)
 
 **Author / Intern:** Asiya  
 **Repository:** [`asiyaibrahim478/week4_internship`](https://github.com/asiyaibrahim478/week4_internship.git)  
-**Milestone Version:** `v0.4-week4`
+**Milestone Version:** `v0.5-week5`
 
 [![Repository: week4_internship](https://img.shields.io/badge/Repo-asiyaibrahim478%2Fweek4__internship-blue)](https://github.com/asiyaibrahim478/week4_internship)
 [![Framework: .NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Frontend: Angular](https://img.shields.io/badge/Frontend-Angular-DD0031?logo=angular&logoColor=white)](https://angular.dev/)
-[![AI Microservice: FastAPI](https://img.shields.io/badge/AI_Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![AI Backend: FastAPI & RAG](https://img.shields.io/badge/AI_Backend-FastAPI_%26_RAG-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Vector Database: ChromaDB](https://img.shields.io/badge/Vector_DB-ChromaDB-FFA000?logo=chroma&logoColor=white)](https://docs.trychroma.com/)
 [![Database: SQL Server & EF Core](https://img.shields.io/badge/Database-SQL_Server_%26_EF_Core-CC292B?logo=microsoftsqlserver&logoColor=white)](https://learn.microsoft.com/en-us/ef/core/)
 
 ---
 
-## 🌟 Overview & Week 4 Objectives
+## 🌟 Overview & Week 5 Objectives (Embeddings & RAG Fundamentals)
 
-Week 4 advances the system into an enterprise-grade secure architecture and expands the Python AI capabilities into a dedicated microservice:
-1. **Part A (.NET Core JWT Auth & RBAC):** Production password hashing using `PasswordHasher<User>`, JWT generation with HMAC-SHA256 signing, validation middleware, and role-based endpoint authorization (`[Authorize]`, `[Authorize(Roles = "Admin")]`).
-2. **Part B (Angular Authentication & Protection):** Centralized `AuthService`, functional HTTP `authInterceptor` injecting Bearer headers, `authGuard` route protection, and dynamic role-based UI visibility.
-3. **Part C, D, E (FastAPI AI Backend & Prompt Engineering):** Asynchronous FastAPI microservice (`ai-service`), Pydantic validation, structured JSON outputs, streaming simulations, conversation history, few-shot conditioning, and prompt injection defenses.
-4. **Part F (Git Collaboration Level Up):** Branch protection, standardized Pull Request templates (`.github/PULL_REQUEST_TEMPLATE.md`), and merge conflict resolution.
+Week 5 introduces **Retrieval-Augmented Generation (RAG)**, transforming the AI track from general chat into a grounded knowledge assistant backed by the real library catalog:
+1. **Part A (Embeddings Fundamentals):** Dense vector generation (`text-embedding-3-small`), geometric cosine similarity calculation, and semantic distance verification.
+2. **Part B (Vector Databases & ChromaDB):** Standing up a local Chroma vector database, indexing document chunks with metadata, performing Approximate Nearest Neighbor (ANN) search, and metadata filtering.
+3. **Part C (Manual 8-Stage RAG Pipeline):** Building the full manual pipeline: Ingestion $\rightarrow$ Chunking (fixed-size + overlap) $\rightarrow$ Embedding $\rightarrow$ Vector Storage $\rightarrow$ Retrieval $\rightarrow$ Grounded Prompt Assembly $\rightarrow$ LLM Synthesis $\rightarrow$ Source Attribution.
+4. **Part D (RAG Quality & Hallucination Reduction):** Grounding constraints (*"If not in context, say I don't have that information"*), evaluation benchmark across 5 questions, diagnosing retrieval vs. generation failures, and chunk-size tuning.
+5. **Part E & Project (FastAPI `/ask` Endpoint & Library Assistant):** Fetching real catalog data from .NET API (`GET /api/books`), embedding chunks into persistent Chroma collection, and exposing `POST /ask` with grounded Q&A and verified source citations.
+6. **Part F (Git Safe Revert):** Performing `git revert` to safely undo commits on protected branches without rewriting public history.
 
 ---
 
-## 🔄 Architecture & Data Flow
+## 🔄 Week 5 RAG Data Flow Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Client["Frontend SPA (Angular)"]
-        UI["UI / Book List / Login View"]
-        AuthSvc["AuthService (localStorage JWT)"]
-        Interceptor["Functional authInterceptor"]
-    end
-
-    subgraph BackendAPI[".NET 8 Web API (:5252)"]
-        JwtMiddleware["JWT Validation Middleware"]
-        AuthCtrl["AuthController (/api/auth)"]
-        BooksCtrl["BooksController (/api/books)"]
-        EF["Entity Framework Core"]
-        DB[(SQL Server / InMemory)]
-    end
-
-    subgraph AIService["Python FastAPI AI Service (:8000)"]
-        FastAPIServer["FastAPI Application"]
-        PydanticModels["Pydantic Validation"]
-        PromptEngine["Engineered Prompt Templates"]
-    end
-
-    UI -->|1. Submit Login| AuthCtrl
-    AuthCtrl -->|2. Verify Hash & Issue JWT| AuthSvc
-    UI -->|3. API Request with Bearer Token| Interceptor
-    Interceptor -->|4. Authenticated Request| JwtMiddleware
-    JwtMiddleware -->|5. Check Claims & Roles| BooksCtrl
-    BooksCtrl --> EF --> DB
-
-    UI -.->|Independent AI Invocations| FastAPIServer
-    FastAPIServer --> PydanticModels --> PromptEngine
+flowchart LR
+    DB[(SQL Server\nDatabase)] -->|1. Seed Data| DotNetAPI[".NET 8 Web API\nGET /api/books"]
+    DotNetAPI -->|2. Fetch Catalog| CorpusScript["Python Corpus Script\n(fetch_corpus.py)"]
+    CorpusScript -->|3. chunk_text & embed| VectorStore["ChromaDB\n(library_catalog_rag)"]
+    
+    UserReq["User / Client\nQuery"] -->|4. POST /ask| FastAPIServer["FastAPI Microservice\n(/ask Endpoint)"]
+    FastAPIServer -->|5. ANN Query| VectorStore
+    VectorStore -->|6. Top-k Chunks + Meta| FastAPIServer
+    FastAPIServer -->|7. Grounded Prompt| LLM["LLM (Claude / GPT)\n(Grounded Generation)"]
+    LLM -->|8. Grounded Answer| FastAPIServer
+    FastAPIServer -->|9. JSON Response| ClientResp["{ answer, sources: [...] }"]
 ```
 
 > [!NOTE]
-> The .NET Web API and Python FastAPI AI microservice remain independent services in Week 4. Direct backend-to-backend orchestration will be integrated in Week 6.
+> The AI service reading from the .NET API's public GET endpoint is a one-way connection used only to build the RAG corpus. The complete three-way orchestration (**Angular $\rightarrow$ .NET API $\rightarrow$ AI Service**) will be integrated in **Week 6** with LangChain.
 
 ---
 

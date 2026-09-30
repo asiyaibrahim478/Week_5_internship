@@ -55,6 +55,12 @@ __pycache__/
 *.pem
 *.key
 
+# --- Vector Databases & Chroma ---
+chroma_db_data/
+*.parquet
+.cache/
+corpus.json
+
 # --- OS & IDE metadata ---
 .DS_Store
 Thumbs.db
